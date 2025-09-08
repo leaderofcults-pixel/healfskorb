@@ -12,6 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, Chrome } from "lucide-react"
 
+// Extend the user type to include role
+interface User {
+  role?: "PATIENT" | "PRESCRIBER";
+}
+
 export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -36,7 +41,8 @@ export default function SignInPage() {
       } else {
         // Get session to check user role
         const session = await getSession()
-        if (session?.user.role === "PRESCRIBER") {
+        // Add null check for session.user
+        if (session?.user?.role === "PRESCRIBER") {
           router.push("/prescriber/dashboard")
         } else {
           router.push("/")

@@ -47,7 +47,7 @@ function calculateBoundingBox(lat: number, lng: number, radiusMiles: number) {
 
 // Main search function with Haversine distance calculation
 export async function searchPrescribers(params: SearchRequest): Promise<PrescriberResult[]> {
-  const db = getDb()
+  const db = await getDb()
   const bounds = calculateBoundingBox(params.lat, params.lng, params.radius)
 
   // Find drug ID from brand name
@@ -61,7 +61,7 @@ export async function searchPrescribers(params: SearchRequest): Promise<Prescrib
     return []
   }
 
-  const drugId = drugResult.drugId
+  const drugId = drugResult?.[0]?.drugId
 
   // Search prescribers with geo-filtering and distance calculation
   const results = await db
@@ -94,8 +94,8 @@ export async function searchPrescribers(params: SearchRequest): Promise<Prescrib
     .where(
       and(
         // Bounding box filter for performance
-        between(usZipcodes.latitude, bounds.minLat, bounds.maxLat),
-        between(usZipcodes.longitude, bounds.minLng, bounds.maxLng),
+        between(sql`CAST(${usZipcodes.latitude} AS DECIMAL)`, sql`${bounds.minLat}`, sql`${bounds.maxLat}`),
+        between(sql`CAST(${usZipcodes.longitude} AS DECIMAL)`, sql`${bounds.minLng}`, sql`${bounds.maxLng}`),
         // Drug filter
         eq(npiPrescriptions.drugId, drugId),
         // Specialty filter if provided
@@ -158,9 +158,9 @@ function calculateMatchScore(prescriber: any, searchParams: SearchRequest): numb
 
 // Get drug suggestions for autocomplete
 export async function getDrugSuggestions(query: string, limit = 10) {
-  const db = getDb()
+  const db = await getDb()
 
-  return await db
+  return db
     .select({
       drugId: drugs.drugId,
       brandName: drugs.brandName,

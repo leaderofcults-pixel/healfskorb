@@ -1,7 +1,6 @@
-import type * as React from "react"
+import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "@/lib/utils"
-
+import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -22,15 +21,25 @@ const badgeVariants = cva(
   },
 )
 
-function Badge({
-  className,
-  variant,
-  asChild = false,
-  ...props
-}: React.ComponentProps<"span"> & VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : "span"
-
-  return <Comp data-slot="badge" className={cn(badgeVariants({ variant }), className)} {...props} />
+interface BadgeProps
+  extends React.HTMLAttributes<HTMLSpanElement>,
+    VariantProps<typeof badgeVariants> {
+  asChild?: boolean
 }
 
-export { Badge, badgeVariants }
+const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
+  ({ className, variant, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "span"
+    return (
+      <Comp
+        ref={ref}
+        className={cn(badgeVariants({ variant }), className)}
+        {...props}
+      />
+    )
+  }
+)
+
+Badge.displayName = "Badge"
+
+export { Badge, type BadgeProps, badgeVariants }

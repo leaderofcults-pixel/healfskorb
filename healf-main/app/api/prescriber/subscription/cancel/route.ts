@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const db = getDb()
+    const db = await getDb()
 
     // Update subscription status to FREE
     await db

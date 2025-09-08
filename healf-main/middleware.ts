@@ -1,7 +1,17 @@
 import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 
-export default auth((req) => {
+// Extend the Request type to include nextUrl and auth
+interface ExtendedRequest extends Request {
+  nextUrl: URL;
+  auth?: {
+    user?: {
+      role?: string;
+    };
+  };
+}
+
+export default auth((req: ExtendedRequest) => {
   const { pathname } = req.nextUrl
   const isLoggedIn = !!req.auth
   const userRole = req.auth?.user?.role
@@ -16,16 +26,6 @@ export default auth((req) => {
   const prescriberRoutes = ["/prescriber"]
   const isPrescriberRoute = prescriberRoutes.some((route) => pathname.startsWith(route))
 
-  // If accessing prescriber routes without being a prescriber
-  if (isPrescriberRoute && (!isLoggedIn || userRole !== "PRESCRIBER")) {
-    return NextResponse.redirect(new URL("/auth/signin", req.url))
-  }
-
-  // If accessing auth pages while logged in, redirect to appropriate dashboard
-  if (isLoggedIn && (pathname.startsWith("/auth/signin") || pathname.startsWith("/auth/signup"))) {
-    if (userRole === "PRESCRIBER") {
-      return NextResponse.redirect(new URL("/prescriber/dashboard", req.url))
-    }
     return NextResponse.redirect(new URL("/", req.url))
   }
 

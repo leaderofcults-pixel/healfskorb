@@ -15,7 +15,21 @@ interface SearchResultsProps {
   onUpgradeToPremium: () => void
 }
 
-const PRICING_TIERS = {
+interface PricingTier {
+  name: string
+  price: number
+  period: string
+  features: string[]
+  searchLimit: number | null
+  multiDrug: boolean
+  multiZipcode: boolean
+  controlledSubstances: boolean
+  originalPrice?: number
+}
+
+type PricingTiers = Record<'freemium' | 'basic' | 'premium' | 'annual', PricingTier>
+
+const PRICING_TIERS: PricingTiers = {
   freemium: {
     name: "Free",
     price: 0,
@@ -59,6 +73,8 @@ const PRICING_TIERS = {
   },
 }
 
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js"
+
 const PayPalButtonsComponent = ({
   onSuccess,
   onError,
@@ -73,85 +89,48 @@ const PayPalButtonsComponent = ({
   const [isProcessing, setIsProcessing] = useState(false)
   const tier = PRICING_TIERS[selectedTier]
 
-  const createOrder = useCallback(async () => {
-    setIsProcessing(true)
-    console.log("[v0] Creating PayPal order...")
+  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || (typeof window !== "undefined" && (window as any).__NEXT_DATA__?.env?.NEXT_PUBLIC_PAYPAL_CLIENT_ID)
 
-    try {
-      const response = await fetch("/api/paypal/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [{ name: `RX Prescribers ${tier.name}`, price: tier.price, qty: 1 }],
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log("[v0] PayPal order created:", data.id)
-      return data.id
-    } catch (error) {
-      console.error("[v0] PayPal order creation failed:", error)
-      setIsProcessing(false)
-      throw error
-    }
-  }, [tier])
-
-  const onApprove = useCallback(
-    async (data: any) => {
-      console.log("[v0] PayPal payment approved, capturing...")
-
-      try {
-        const response = await fetch(`/api/paypal/orders/${data.orderID}/capture`, {
-          method: "POST",
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const details = await response.json()
-        console.log("[v0] PayPal payment captured:", details)
-
-        setIsProcessing(false)
-        onSuccess()
-      } catch (error) {
-        console.error("[v0] PayPal capture failed:", error)
-        setIsProcessing(false)
-        onError()
-      }
-    },
-    [onSuccess, onError],
-  )
-
-  const handleError = useCallback(
-    (err: any) => {
-      console.error("[v0] PayPal error:", err)
-      setIsProcessing(false)
-      onError()
-    },
-    [onError],
-  )
-
-  const handleCancel = useCallback(() => {
-    console.log("[v0] PayPal payment cancelled")
-    setIsProcessing(false)
-    onCancel()
-  }, [onCancel])
+  if (!clientId) {
+    return (
+      <div className="text-center p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p className="text-sm text-gray-600 mb-2">PayPal is not configured</p>
+        <Button
+          onClick={onSuccess}
+          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+        >
+          Continue with Free Trial
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <div className="text-center p-4 border border-gray-200 rounded-lg bg-gray-50">
-      <p className="text-sm text-gray-600 mb-2">PayPal payment is currently unavailable</p>
-      <Button
-        onClick={onSuccess}
-        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-      >
-        Continue with Free Trial
-      </Button>
-    </div>
+    <PayPalScriptProvider options={{ clientId: clientId, currency: "USD" }}>
+      <PayPalButtons
+        style={{ layout: "vertical" }}
+        createOrder={async () => {
+          const response = await fetch("/api/paypal/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: [{ name: `RX Prescribers ${tier.name}`, price: tier.price, qty: 1 }] }),
+          })
+          const data = await response.json()
+          return data.id
+        }}
+        onApprove={async (data: any, actions: any) => {
+          try {
+            const response = await fetch(`/api/paypal/orders/${data.orderID}/capture`, { method: "POST" })
+            const details = await response.json()
+            onSuccess()
+          } catch (err) {
+            onError()
+          }
+        }}
+        onError={(err: any) => onError()}
+        onCancel={() => onCancel()}
+      />
+    </PayPalScriptProvider>
   )
 }
 
@@ -409,7 +388,7 @@ export function SearchResults({ results, isLoading, loadingMessage, onUpgradeToP
           <PrescriberCard
             key={prescriber.npi}
             prescriber={prescriber}
-            isPremium={results.is_premium}
+            isPremium={results.is_premium ?? false}
             onUpgrade={handleUpgradeClick}
           />
         ))}

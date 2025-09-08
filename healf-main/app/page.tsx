@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SearchInterface } from "@/components/search-interface"
-import { SonarMap } from "@/components/sonar-map"
-import { PrescriberResults } from "@/components/prescriber-results"
-import { MolecularBackground } from "@/components/molecular-background"
+import { SearchInterface } from "../components/search-interface"
+import { SonarMap } from "../components/sonar-map"
+import { PrescriberResults } from "../components/prescriber-results"
+import { MolecularBackground } from "../components/molecular-background"
 import type { PrescriberResult } from "@/lib/db/queries"
 
 export default function HomePage() {

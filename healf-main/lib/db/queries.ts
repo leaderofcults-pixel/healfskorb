@@ -47,7 +47,7 @@ function calculateBoundingBox(lat: number, lng: number, radiusMiles: number) {
 
 // Main search function with Haversine distance calculation
 export async function searchPrescribers(params: SearchRequest): Promise<PrescriberResult[]> {
-  const db = getDb()
+  const db = await getDb()
   const bounds = calculateBoundingBox(params.lat, params.lng, params.radius)
 
   // Find drug ID from brand name

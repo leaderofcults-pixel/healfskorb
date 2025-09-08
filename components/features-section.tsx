@@ -132,7 +132,9 @@ export function FeaturesSection() {
             {features.map((feature, index) => (
               <Card
                 key={index}
-                ref={(el) => (cardRefs.current[index] = el)}
+                ref={(el) => { 
+                  cardRefs.current[index] = el 
+                }}
                 className={`group hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 cursor-pointer relative overflow-hidden ${
                   visibleCards[index] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}

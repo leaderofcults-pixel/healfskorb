@@ -3,6 +3,7 @@ export interface Prescriber {
   name: string
   specialty: string
   specialty_group: string
+  phone?: string
   address: {
     street: string
     city: string

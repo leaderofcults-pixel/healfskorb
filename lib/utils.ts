@@ -118,10 +118,9 @@ export function cn(...inputs: ClassValue[]): string {
 }
 
 // Proper VariantProps type
-export type VariantProps<T extends (...args: any[]) => any> = Omit<
-  Parameters<T>[0],
-  'class' | 'className'
->
+export type VariantProps<T extends (...args: any) => any> = {
+  [K in keyof Parameters<T>[0]]: Parameters<T>[0][K]
+}
 
 // Enhanced CVA (Class Variance Authority) implementation
 export function cva<

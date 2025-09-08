@@ -1,0 +1,95 @@
+import { type NextAuthConfig } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
+import { getDb } from "@/lib/db/connection"
+import { users } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
+import bcrypt from "bcryptjs"
+
+export type User = {
+  id: string
+  email: string
+  name: string | null
+  role: "PATIENT" | "PRESCRIBER"
+}
+
+export const nextAuthConfig = {
+  providers: [
+    CredentialsProvider({
+      id: "credentials",
+      name: "Credentials",
+      credentials: {
+        email: {
+          label: "Email",
+          type: "email",
+          placeholder: "example@example.com",
+        },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null
+
+        try {
+          const db = await getDb()
+          const user = await db.query.users.findFirst({
+            where: eq(users.email, credentials.email),
+          })
+
+          if (!user) return null
+
+          const passwordMatch = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
+
+          if (!passwordMatch) return null
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error("Error during authentication:", error)
+          return null
+        }
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.role = user.role
+        token.id = user.id
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.role = token.role as string
+        session.user.id = token.id as string
+      }
+      return session
+    },
+  },
+  pages: {
+    signIn: "/auth/signin",
+  },
+} satisfies NextAuthConfig
+
+declare module "next-auth" {
+  interface User {
+    id: string
+    role: "PATIENT" | "PRESCRIBER"
+  }
+  interface Session {
+    user: User & {
+      id: string
+      role: "PATIENT" | "PRESCRIBER"
+    }
+  }
+  interface JWT {
+    role?: "PATIENT" | "PRESCRIBER"
+    id?: string
+  }
+}

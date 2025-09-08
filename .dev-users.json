@@ -1,0 +1,18 @@
+[
+  {
+    "id": "31c925bf-0aec-42b4-b293-21b72ea4e395",
+    "email": "dev+tester@example.com",
+    "passwordHash": "$2b$10$FXb9rCZ1mP8DKYB1IATYS.xVpHgbIATjUaWGHUxE10bI0iKF.wrYC",
+    "name": "Dev Tester",
+    "role": "PATIENT",
+    "createdAt": "2025-09-07T00:14:11.043Z"
+  },
+  {
+    "id": "1307009e-1ac8-47c5-90f0-b0ab1c18bcc1",
+    "email": "dev+tester@example.com",
+    "passwordHash": "$2b$10$YOtTA01Xks.9q69fCvIhnOs53FpCBdffM13pumDGRupU.GpNivIma",
+    "name": "Dev Tester",
+    "role": "PATIENT",
+    "createdAt": "2025-09-07T00:14:13.446Z"
+  }
+]

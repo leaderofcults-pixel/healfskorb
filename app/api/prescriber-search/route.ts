@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Search completed:", {
       resultCount: results.length,
-      topMatch: results?.matchScore || 0,
+      topMatch: results?.[0]?.matchScore || 0,
     })
 
     return NextResponse.json({

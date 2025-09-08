@@ -1,5 +1,29 @@
+import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import { mysqlTable, varchar, decimal, int, boolean, primaryKey, index, timestamp, text } from "drizzle-orm/mysql-core"
-import { crypto } from "crypto"
+import { z } from "zod"
+
+// Users table
+export const users = mysqlTable(
+  "users",
+  {
+    id: varchar("id", { length: 128 }).primaryKey(),
+    email: varchar("email", { length: 255 }).notNull().unique(),
+    name: varchar("name", { length: 255 }),
+    password: varchar("password", { length: 255 }).notNull(),
+    role: varchar("role", { length: 20, enum: ["PATIENT", "PRESCRIBER"] }).notNull().default("PATIENT"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    emailIdx: index("idx_email").on(table.email),
+  }),
+)
+
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
+
+export const insertUserSchema = createInsertSchema(users)
+export const selectUserSchema = createSelectSchema(users)
 
 // US ZIP codes table for geographic searches
 export const usZipcodes = mysqlTable(
@@ -87,18 +111,16 @@ export const states = mysqlTable("states", {
 })
 
 // Users table for authentication
-export const users = mysqlTable(
+export const authUsers = mysqlTable(
   "users",
   {
-    id: varchar("id", { length: 36 })
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+    id: varchar("id", { length: 128 }).primaryKey(),
     email: varchar("email", { length: 255 }).unique().notNull(),
-    passwordHash: varchar("password_hash", { length: 255 }),
+    password: varchar("password", { length: 255 }).notNull(),
     name: varchar("name", { length: 255 }),
-    role: varchar("role", { length: 20, enum: ["PATIENT", "PRESCRIBER"] }).notNull(),
-    createdAt: timestamp("created_at").defaultNow(),
-    lastLogin: timestamp("last_login"),
+    role: varchar("role", { length: 20, enum: ["PATIENT", "PRESCRIBER"] }).notNull().default("PATIENT"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => ({
     emailIdx: index("idx_email").on(table.email),
@@ -153,5 +175,4 @@ export type NpiPrescription = typeof npiPrescriptions.$inferSelect
 export type Drug = typeof drugs.$inferSelect
 export type Specialty = typeof specialties.$inferSelect
 export type State = typeof states.$inferSelect
-export type User = typeof users.$inferSelect
 export type PrescriberProfile = typeof prescriberProfiles.$inferSelect

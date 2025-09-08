@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return new Response("Invalid signature", { status: 401 })
     }
 
-    const db = getDb()
+    const db = await getDb()
 
     switch (body.event_type) {
       case "BILLING.SUBSCRIPTION.ACTIVATED":

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = registerSchema.parse(body)
 
-    const db = getDb()
+    const db = await getDb()
 
     // Check if user already exists
     const existingUser = await db.select().from(users).where(eq(users.email, validatedData.email)).limit(1)
@@ -30,9 +30,10 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(validatedData.password, 12)
 
     // Create user
-    const newUser = await db.insert(users).values({
+    await db.insert(users).values({
+      id: crypto.randomUUID(), // Generate a new id
       email: validatedData.email,
-      passwordHash,
+      password: passwordHash, // Use 'password' field
       name: validatedData.name,
       role: validatedData.role,
       createdAt: new Date(),

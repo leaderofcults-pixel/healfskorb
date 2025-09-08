@@ -28,7 +28,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const db = getDb()
+    const db = await getDb()
 
     // Get prescriber profile
     const profile = await db
