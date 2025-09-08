@@ -16,6 +16,31 @@ interface PayPalCreateOrderRequest {
   planType?: 'basic' | 'premium' | 'enterprise'
 }
 
+interface PayPalPurchaseUnit {
+  amount: {
+    currency_code: string
+    value: string
+    breakdown?: {
+      item_total: {
+        currency_code: string
+        value: string
+      }
+    }
+  }
+  description: string
+  items?: Array<{
+    name: string
+    description: string
+    sku: string
+    unit_amount: {
+      currency_code: string
+      value: string
+    }
+    quantity: string
+    category: 'DIGITAL_GOODS' | 'PHYSICAL_GOODS'
+  }>
+}
+
 // Predefined pricing tiers for security
 const PRICING_TIERS = {
   basic: { price: 9.99, name: "Basic Access" },
@@ -47,24 +72,34 @@ async function getPayPalClient() {
 }
 
 // Input validation
-function validateOrderRequest(data: any): PayPalCreateOrderRequest {
-  const { items, currency = "USD", planType } = data
-  
+function validateOrderRequest(data: unknown): PayPalCreateOrderRequest {
+  if (typeof data !== 'object' || data === null) {
+    throw new Error("Invalid request data")
+  }
+  const obj = data as Record<string, unknown>
+  const { items, currency = "USD", planType } = obj
+
   // Validate currency
   const validCurrencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD']
-  if (!validCurrencies.includes(currency)) {
+  if (typeof currency !== 'string' || !validCurrencies.includes(currency)) {
     throw new Error(`Invalid currency: ${currency}`)
   }
-  
+
   // Validate plan type if provided
-  if (planType && !Object.keys(PRICING_TIERS).includes(planType)) {
+  if (planType !== undefined && (typeof planType !== 'string' || !Object.keys(PRICING_TIERS).includes(planType))) {
     throw new Error(`Invalid plan type: ${planType}`)
   }
-  
+
   // Validate items if provided
-  if (items && Array.isArray(items)) {
+  if (items !== undefined) {
+    if (!Array.isArray(items)) {
+      throw new Error("Items must be an array")
+    }
     for (const item of items) {
-      if (!item.name || typeof item.price !== 'number' || typeof item.qty !== 'number') {
+      if (typeof item !== 'object' || item === null ||
+          !('name' in item) || typeof item.name !== 'string' ||
+          !('price' in item) || typeof item.price !== 'number' ||
+          !('qty' in item) || typeof item.qty !== 'number') {
         throw new Error("Invalid item structure")
       }
       if (item.price < 0 || item.qty < 1) {
@@ -72,8 +107,8 @@ function validateOrderRequest(data: any): PayPalCreateOrderRequest {
       }
     }
   }
-  
-  return { items, currency, planType }
+
+  return { items: items as PayPalOrderItem[] | undefined, currency, planType: planType as keyof typeof PRICING_TIERS | undefined }
 }
 
 // Calculate total with validation
@@ -118,9 +153,9 @@ export async function POST(request: NextRequest) {
     orderRequest.prefer("return=representation")
     
     // Build order request body
-    const purchaseUnit: any = {
+    const purchaseUnit: PayPalPurchaseUnit = {
       amount: {
-        currency_code: currency,
+        currency_code: currency as string,
         value: total.toFixed(2),
       },
       description,
@@ -130,7 +165,7 @@ export async function POST(request: NextRequest) {
     if (items && items.length > 0) {
       purchaseUnit.amount.breakdown = {
         item_total: {
-          currency_code: currency,
+          currency_code: currency as string,
           value: total.toFixed(2),
         },
       }
@@ -139,7 +174,7 @@ export async function POST(request: NextRequest) {
         description: item.description || '',
         sku: item.sku || `item-${Date.now()}`,
         unit_amount: {
-          currency_code: currency,
+          currency_code: currency as string,
           value: item.price.toFixed(2),
         },
         quantity: item.qty.toString(),

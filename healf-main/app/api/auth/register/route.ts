@@ -20,35 +20,82 @@ export async function POST(request: NextRequest) {
     const db = await getDb()
 
     // Check if user already exists
-    const existingUser = await db.select().from(users).where(eq(users.email, validatedData.email)).limit(1)
+    const existingUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, validatedData.email))
+      .limit(1)
 
     if (existingUser.length > 0) {
-      return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
+      return NextResponse.json(
+        { error: "User with this email already exists" }, 
+        { status: 400 }
+      )
     }
 
     // Hash password
     const passwordHash = await bcrypt.hash(validatedData.password, 12)
 
-    // Create user
-    await db.insert(users).values({
-      id: crypto.randomUUID(), // Generate a new id
-      email: validatedData.email,
-      password: passwordHash, // Use 'password' field
-      name: validatedData.name,
-      role: validatedData.role,
-      createdAt: new Date(),
-    })
+    // Create user - ensure all required fields match your schema
+    const userId = crypto.randomUUID();
 
-    console.log("[v0] User registered successfully:", validatedData.email)
+    await db
+      .insert(users)
+      .values({
+        id: userId,
+        email: validatedData.email,
+        passwordHash: passwordHash,
+        name: validatedData.name,
+        role: validatedData.role,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-    return NextResponse.json({ message: "User registered successfully" }, { status: 201 })
+    // Fetch the newly created user
+    const createdUser = await db
+      .select({ id: users.id, email: users.email })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    console.log("User registered successfully:", validatedData.email);
+
+    return NextResponse.json(
+      { 
+        message: "User registered successfully",
+        user: { 
+          id: createdUser[0].id, 
+          email: createdUser[0].email 
+        }
+      }, 
+      { status: 201 }
+    )
   } catch (error) {
-    console.error("[v0] Registration error:", error)
+    console.error("Registration error:", error)
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request data", details: error.errors }, { status: 400 })
+      return NextResponse.json(
+        { 
+          error: "Invalid request data", 
+          details: error.errors 
+        }, 
+        { status: 400 }
+      )
     }
 
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    // Handle database constraint errors (MySQL specific)
+    if (error instanceof Error) {
+      if (error.message.includes('Duplicate entry')) {
+        return NextResponse.json(
+          { error: "User with this email already exists" }, 
+          { status: 400 }
+        )
+      }
+    }
+
+    return NextResponse.json(
+      { error: "Internal server error" }, 
+      { status: 500 }
+    )
   }
 }

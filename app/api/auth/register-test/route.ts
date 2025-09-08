@@ -6,6 +6,15 @@ import { randomUUID } from "crypto"
 import fs from "fs/promises"
 import path from "path"
 
+type DevUser = {
+  id: string
+  email: string
+  passwordHash: string
+  name: string
+  role: string
+  createdAt: string
+}
+
 export async function POST(request: NextRequest) {
   // Only allow in non-production to avoid accidental public test accounts
   if (process.env.NODE_ENV === "production") {
@@ -45,17 +54,18 @@ export async function POST(request: NextRequest) {
       })
 
       return NextResponse.json({ id, email, createdIn: "db" })
-    } catch (dbErr: any) {
-      console.warn("[dev] DB insert failed, falling back to dev-users file:", dbErr?.message)
+    } catch (dbErr: unknown) {
+      const message = dbErr instanceof Error ? dbErr.message : String(dbErr)
+      console.warn("[dev] DB insert failed, falling back to dev-users file:", message)
 
       // fallback to writing a local dev users file
       try {
         const file = path.resolve(process.cwd(), ".dev-users.json")
-        let list: any[] = []
+        let list: DevUser[] = []
         try {
           const raw = await fs.readFile(file, "utf8")
           list = JSON.parse(raw || "[]")
-        } catch (e) {
+        } catch {
           // ignore missing file
         }
 
@@ -63,13 +73,15 @@ export async function POST(request: NextRequest) {
         await fs.writeFile(file, JSON.stringify(list, null, 2), "utf8")
 
         return NextResponse.json({ id, email, createdIn: "file" })
-      } catch (fileErr: any) {
-        console.error("[dev] fallback write failed:", fileErr)
-        return NextResponse.json({ error: fileErr?.message || String(fileErr) }, { status: 500 })
+      } catch (fileErr: unknown) {
+        const message = fileErr instanceof Error ? fileErr.message : String(fileErr)
+        console.error("[dev] fallback write failed:", message)
+        return NextResponse.json({ error: message }, { status: 500 })
       }
     }
-  } catch (err: any) {
-    console.error("[dev] register-test failed:", err)
-    return NextResponse.json({ error: err?.message || String(err) }, { status: 500 })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[dev] register-test failed:", message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

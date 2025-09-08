@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
+import Link from "next/link";
 import { FooterAuthLinks } from "./FooterAuthLinks"; // <-- IMPORT our new client component
 
 export function Footer() {
@@ -31,15 +32,15 @@ export function Footer() {
           <div className="space-y-4">
             <h4 className="font-semibold">Product</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>
-                <a href="/how-it-works" className="hover:text-foreground transition-colors">
+            <li>
+                <Link href="/how-it-works" className="hover:text-foreground transition-colors">
                   How It Works
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/#search" className="hover:text-foreground transition-colors">
+                <Link href="/#search" className="hover:text-foreground transition-colors">
                   Search Providers
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-foreground transition-colors">

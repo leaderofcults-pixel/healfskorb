@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import path from "path"
+import fs from "fs"
 
 import { getDb } from "@/lib/db/connection"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+
+type DevUser = {
+  id: string
+  email: string
+  passwordHash: string
+  name: string
+  role: string
+  createdAt: string
+}
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +42,7 @@ export async function POST(req: Request) {
         }
         return NextResponse.json({ ok: false }, { status: 401 })
       }
-    } catch (e) {
+    } catch {
       // DB unavailable — fall through to dev-file check
       // eslint-disable-next-line no-console
       console.warn('[dev] test-credentials: DB unavailable, falling back to .dev-users.json')
@@ -40,12 +51,10 @@ export async function POST(req: Request) {
     // Development fallback
     if (process.env.NODE_ENV !== "production") {
       try {
-        const path = require("path")
-        const fs = require("fs")
         const file = path.resolve(process.cwd(), ".dev-users.json")
         if (fs.existsSync(file)) {
-          const list = JSON.parse(fs.readFileSync(file, "utf8") || "[]")
-          const found = list.find((u: any) => u.email === email)
+          const list: DevUser[] = JSON.parse(fs.readFileSync(file, "utf8") || "[]")
+          const found = list.find((u) => u.email === email)
           if (found) {
             const ok = await bcrypt.compare(password as string, found.passwordHash)
             if (ok) {

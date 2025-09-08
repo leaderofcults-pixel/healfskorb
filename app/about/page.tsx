@@ -81,9 +81,9 @@ export default function AboutPage() {
             <h2 className="text-3xl font-bold text-center mb-8">Our Mission</h2>
             <div className="prose prose-lg mx-auto text-center">
               <p className="text-muted-foreground">
-                We believe that finding the right healthcare provider shouldn't be a guessing game. By providing
+                We believe that finding the right healthcare provider shouldn&apos;t be a guessing game. By providing
                 transparent data about provider experience with specific medications, we empower patients to make
-                informed decisions about their healthcare and connect with providers who truly understand their needs.
+                informed decisions about their healthcare and connect with providers who truly understand their patients&apos; needs.
               </p>
             </div>
           </div>

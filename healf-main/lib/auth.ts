@@ -1,9 +1,21 @@
 import CredentialsProvider from "next-auth/providers/credentials"
 import { getDb } from "@/lib/db/connection"
-import NextAuth, { User, Session } from "next-auth"
+import { User, Session } from "next-auth"
+import NextAuth from "next-auth/next"
 import type { Adapter } from "next-auth/adapters"
 import type { JWT } from "next-auth/jwt"
-import { users } from "@/lib/db/schema"
+// Update this import to match the actual exported member from your schema file.
+// For example, if your schema exports 'Users' or 'userTable', use that name instead.
+// import { Users } from "@/lib/db/schema"
+// import { userTable } from "@/lib/db/schema"
+// Update this import to match the actual exported member from your schema file.
+// For example, if your schema exports 'Users' or 'users', use that name instead.
+// import { Users as users } from "@/lib/db/schema"
+// Update this import to match the actual exported member from your schema file.
+// For example, if your schema exports 'Users' or 'userTable', use that name instead.
+// import { Users } from "@/lib/db/schema"
+// import { userTable } from "@/lib/db/schema"
+import { Users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 

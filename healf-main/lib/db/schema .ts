@@ -1,6 +1,5 @@
 import { mysqlTable, varchar, decimal, int, boolean, primaryKey, index, timestamp, text } from "drizzle-orm/mysql-core"
-import { crypto } from "crypto"
-
+import crypto from "crypto";
 // US ZIP codes table for geographic searches
 export const usZipcodes = mysqlTable(
   "us_zipcodes",

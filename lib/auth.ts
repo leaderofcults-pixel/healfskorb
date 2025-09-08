@@ -1,6 +1,6 @@
 import { type NextAuthConfig } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { getDb } from "@/lib/db/db"
+import { getDb } from "@/lib/db/connection" // Fixed import path
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
@@ -25,9 +25,15 @@ export const nextAuthConfig = {
         try {
           const db = await getDb()
           
-          const [user] = await db.select().from(users).where(eq(users.email, credentials.email as string)).limit(1)
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, credentials.email as string))
+            .limit(1)
 
           if (!user) return null
+
+          if (!user.password) return null
 
           const passwordMatch = await bcrypt.compare(
             credentials.password as string,
@@ -40,7 +46,7 @@ export const nextAuthConfig = {
             id: user.id,
             email: user.email,
             name: user.name,
-            role: user.role,
+            role: user.role as "PATIENT" | "PRESCRIBER",
             image: null,
           }
         } catch (error) {
@@ -51,16 +57,16 @@ export const nextAuthConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }: { token: any; user?: any; account?: any }) {
+    async jwt({ token, user }: { token: import("next-auth/jwt").JWT; user?: import("next-auth").User }) {
       if (user) {
         token.role = user.role
         token.id = user.id
       }
       return token
     },
-    async session({ session, token }: { session: any; token: any }) {
-      if (token) {
-        session.user.role = token.role as string
+    async session({ session, token }: { session: import("next-auth").Session; token: import("next-auth/jwt").JWT }) {
+      if (token && session.user) {
+        session.user.role = token.role as "PATIENT" | "PRESCRIBER"
         session.user.id = token.id as string
       }
       return session
@@ -69,14 +75,36 @@ export const nextAuthConfig = {
   pages: {
     signIn: "/auth/signin",
   },
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 } satisfies NextAuthConfig
 
+// Extend NextAuth types
 declare module "next-auth" {
   interface User {
     id: string
     email: string
     name?: string | null
     image?: string | null
+    role: "PATIENT" | "PRESCRIBER"
+  }
+  
+  interface Session {
+    user: {
+      id: string
+      email: string
+      name?: string | null
+      image?: string | null
+      role: "PATIENT" | "PRESCRIBER"
+    }
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string
     role: "PATIENT" | "PRESCRIBER"
   }
 }

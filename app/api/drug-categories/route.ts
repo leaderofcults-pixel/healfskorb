@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 const API_BASE_URL = "https://api.rxprescribers.com"
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log("[v0] Proxying drug categories request to:", `${API_BASE_URL}/drug_categories.php`)
 
